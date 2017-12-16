@@ -15,6 +15,7 @@ void sensors_set_contrast_always_max(bool b);
 void sensors_change_current_contrast(int dir);
 void sensors_init();
 void sensors_check();
+bool isLightsOff();
 
 #endif
 

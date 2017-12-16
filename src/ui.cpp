@@ -1313,70 +1313,77 @@ private:
 protected:
 	bool draw() override
 	{
-		calendar_tm tm;
-		calendar_get_time(tm);
 
-		// hours and minutes
-		char buf[20];
-		buf[0] = tm.tm_hour / 10 + '0';
-		buf[1] = 0;
-		fb().draw_text( 0, 0, 255, buf, font_large_digits);
+		if (!isLightsOff()) {
+			calendar_tm tm;
+			calendar_get_time(tm);
 
-		buf[0] = tm.tm_hour % 10 + '0';
-		buf[1] = 0;
-		fb().draw_text(13, 0, 255, buf, font_large_digits);
+			// hours and minutes
+			char buf[20];
+			buf[0] = tm.tm_hour / 10 + '0';
+			buf[1] = 0;
+			fb().draw_text( 0, 0, 255, buf, font_large_digits);
 
-		buf[0] = tm.tm_min / 10 + '0';
-		buf[1] = 0;
-		fb().draw_text(29, 0, 255, buf, font_large_digits);
+			buf[0] = tm.tm_hour % 10 + '0';
+			buf[1] = 0;
+			fb().draw_text(13, 0, 255, buf, font_large_digits);
 
-		buf[0] = tm.tm_min % 10 + '0';
-		buf[1] = 0;
-		fb().draw_text(42, 0, 255, buf, font_large_digits);
+			buf[0] = tm.tm_min / 10 + '0';
+			buf[1] = 0;
+			fb().draw_text(29, 0, 255, buf, font_large_digits);
 
-		buf[0] = 0xE2; buf[1] = 0x82; buf[2] = tm.tm_sec / 10 + 0x80;
-		buf[3] = 0xE2; buf[4] = 0x82; buf[5] = tm.tm_sec % 10 + 0x80;
-		buf[6] = 0;
-		fb().draw_text(57, 13, 255, buf, font_5x5);
-		fb().fill(27,  5, 2, 2, 255);
-		fb().fill(27, 12, 2, 2, 255);
+			buf[0] = tm.tm_min % 10 + '0';
+			buf[1] = 0;
+			fb().draw_text(42, 0, 255, buf, font_large_digits);
 
-		buf[0] = tm.tm_wday + '0';
-		buf[1] = 0;
-		fb().draw_text(0, 19, 255, buf, font_week_names);
+			buf[0] = 0xE2; buf[1] = 0x82; buf[2] = tm.tm_sec / 10 + 0x80;
+			buf[3] = 0xE2; buf[4] = 0x82; buf[5] = tm.tm_sec % 10 + 0x80;
+			buf[6] = 0;
+			fb().draw_text(57, 13, 255, buf, font_5x5);
+			fb().fill(27,  5, 2, 2, 255);
+			fb().fill(27, 12, 2, 2, 255);
 
-		sprintf_P(buf, PSTR("%2d/%2d"), tm.tm_mon + 1, tm.tm_mday);
-		fb().draw_text(26, 19, 255, buf, font_bold_digits);
+			buf[0] = tm.tm_wday + '0';
+			buf[1] = 0;
+			fb().draw_text(0, 19, 255, buf, font_week_names);
 
-		int temp = bme280_result.temp_10; // TODO: Fahrenheit degree
-		if(temp <= -100)
-		{
-			// under -10.0 deg C; ommit dot
-			sprintf_P(buf, PSTR("-%d"), (-temp + 5) / 10);
+			sprintf_P(buf, PSTR("%2d/%2d"), tm.tm_mon + 1, tm.tm_mday);
+			fb().draw_text(26, 19, 255, buf, font_bold_digits);
+
+			int temp = bme280_result.temp_10; // TODO: Fahrenheit degree
+			if(temp <= -100)
+			{
+				// under -10.0 deg C; ommit dot
+				sprintf_P(buf, PSTR("-%d"), (-temp + 5) / 10);
+			}
+			else if(temp < 0)
+			{
+				// -10.0 < temp < 0.0
+				sprintf_P(buf, PSTR("-%d.%d"), -temp / 10, -temp % 10);
+			}
+			else
+			{
+				// include dot
+				sprintf_P(buf, PSTR("%2d.%d"), temp/10, temp %10);
+			}
+			sprintf_P(buf + strlen(buf),
+				PSTR("℃ %4dh %2d%%"), bme280_result.pressure, bme280_result.humidity);
+			fb().draw_text(0, 28, 255, buf, font_4x5);
+
+
+			// draw marquee
+			if(font_bff.get_available())
+			{
+				fb().draw_text(-marquee_x              , 36, 255, marquee, font_bff);
+				if(marquee_len > LED_MAX_LOGICAL_COL)
+					fb().draw_text(-marquee_x + marquee_len, 36, 255, marquee, font_bff);
+			}
+			return true;
+		} else {
+			//lights off
+			get_current_frame_buffer().fill(0x00);
+			return true;
 		}
-		else if(temp < 0)
-		{
-			// -10.0 < temp < 0.0
-			sprintf_P(buf, PSTR("-%d.%d"), -temp / 10, -temp % 10);
-		}
-		else
-		{
-			// include dot
-			sprintf_P(buf, PSTR("%2d.%d"), temp/10, temp %10);
-		}
-		sprintf_P(buf + strlen(buf),
-			PSTR("℃ %4dh %2d%%"), bme280_result.pressure, bme280_result.humidity);
-		fb().draw_text(0, 28, 255, buf, font_4x5);
-
-
-		// draw marquee
-		if(font_bff.get_available())
-		{
-			fb().draw_text(-marquee_x              , 36, 255, marquee, font_bff);
-			if(marquee_len > LED_MAX_LOGICAL_COL)
-				fb().draw_text(-marquee_x + marquee_len, 36, 255, marquee, font_bff);
-		}
-		return true;
 	}
 
 	void on_button(uint32_t button) override
@@ -1397,6 +1404,12 @@ protected:
 			// down button; decrease contrast
 			sensors_change_current_contrast(-1);
 			return;
+//		case BUTTON_LEFT:
+//			sensors_set_contrast_always_max(false);
+//			return;
+//		case BUTTON_RIGHT:
+//			sensors_set_contrast_always_max(true);
+//			return;
 		}
 	}
 

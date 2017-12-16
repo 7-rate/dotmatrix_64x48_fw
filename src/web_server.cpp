@@ -384,6 +384,10 @@ void web_server_setup()
 	if(!SPIFFS.exists(F("/w/index.html.gz"))
 		|| !font_bff.get_available()) // this must exist for proper working
 	{
+
+//		if (!SPIFFS.exists(F("/w/index.html.gz"))) {
+//			ui_set_marquee(F("not exists html"));
+//		}
 		// insane filesystem;
 		in_recovery = true;
 		server.on(F("/"), HTTP_GET, []() {

@@ -27,6 +27,9 @@ static uint8_t target_contrast_value = max_contrast; //!< targetting contrast va
 static uint8_t current_contrast_value = 0; //!< current contrast value
 static int last_triggered_brightness_index = -100; //!< brightness index as of last contrast changing
 
+#define LIGHTS_OFF_THRESHOLD 870
+static bool isLightsOffFlag = false;
+
 static void sensors_bme280_get()
 {
 	if(!bme280.available()) return;
@@ -55,6 +58,7 @@ static void sensors_change_contrast()
 		else if(current_contrast_value > target_contrast_value)
 			--current_contrast_value;
 		led_set_contrast(current_contrast_value);
+		Serial.printf("contrast=%d\r\n", current_contrast_value);
 	}
 }
 
@@ -66,6 +70,10 @@ static void sensors_get_env_brightness()
 		return;
 	}
 	current_brightness = analogRead(0);
+
+	isLightsOffFlag = (current_brightness > LIGHTS_OFF_THRESHOLD)
+					? true
+					: false;
 
 	// check if current brightness changes enough to trigger contrast change
 	int index = current_brightness / brightness_to_index_factor;
@@ -87,6 +95,11 @@ static void sensors_get_env_brightness()
 
 		target_contrast_value = contrast; // set target contrast
 	}
+}
+
+bool isLightsOff()
+{
+	return isLightsOffFlag;
 }
 
 static void sensors_write_contrasts_settings()
