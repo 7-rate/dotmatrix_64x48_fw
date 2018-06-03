@@ -1404,12 +1404,6 @@ protected:
 			// down button; decrease contrast
 			sensors_change_current_contrast(-1);
 			return;
-//		case BUTTON_LEFT:
-//			sensors_set_contrast_always_max(false);
-//			return;
-//		case BUTTON_RIGHT:
-//			sensors_set_contrast_always_max(true);
-//			return;
 		}
 	}
 
